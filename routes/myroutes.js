@@ -8,5 +8,6 @@ router.put("/user/:id", userController.updateUser);
 router.get("/user/:id", userController.fetchUser);
 router.get("/users", userController.fetchAllUsers); // Corrected function name
 router.delete("/user/:id", userController.deleteUser);
+router.post("/user/login", userC)
 
 export default router;

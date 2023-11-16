@@ -162,6 +162,19 @@ const userController = {
             });
         }
     },
+    login: async (req, res) => {
+        const {email, password} = req.body;
+        const user = await User.findOne({email});
+
+        if(!user){
+            return res.status(404).json({
+                statusCode: 404,
+                message: "User not found",
+            });
+        }
+
+        isPasswordCorrect = user.password == 
+    }
 };
 
 export default userController;
