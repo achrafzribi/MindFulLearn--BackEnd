@@ -1,4 +1,6 @@
 import { User } from "../model/user.js";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 const userController = {
     createUser: async (req, res) => {
@@ -20,7 +22,7 @@ const userController = {
                 image,
                 role,
                 dateOfBirth,
-                password,
+                password: await bcrypt.hash(password, 10),
             });
 
             await user.save();
@@ -173,7 +175,20 @@ const userController = {
             });
         }
 
-        isPasswordCorrect = user.password == 
+        if(!(await bcrypt.compare(password, user.password))){
+            return res.status(401).json({
+                statusCode: 401,
+                message: "Wrong password",
+            });
+        }
+
+        const token = jwt.sign({user}, process.env.JWT_SECRET, {expiresIn: "1d"});
+
+        return res.status(200).json({
+            statusCode: 200,
+            message: "User logged in",
+            token: token,
+        });
     }
 };
 
