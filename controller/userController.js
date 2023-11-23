@@ -109,7 +109,20 @@ const userController = {
             return res.status(200).json({
                 statusCode: 200,
                 message: "User fetched successfully",
-                user: user,
+                role: user.role,
+                __id : user.id,
+                firstname : user.firstname,
+                lastname : user.lastname,
+                email : user.email,
+                image : user.image,
+                dateOfBirth : user.dateOfBirth,
+                password : user.password,
+                createdAt : user.createdAt,
+                updatedAt : user.updatedAt,
+                __v : user.__v.toString()
+
+
+
             });
         } catch (error) {
             console.error(error);
@@ -141,17 +154,22 @@ const userController = {
     deleteUser: async (req, res) => {
         try {
             const userId = req.params.id;
+            console.log("User ID to delete:", userId);
+    
             const user = await User.findById(userId);
-
+            console.log("User to delete:", user);
+    
             if (!user) {
                 return res.status(404).json({
                     statusCode: 404,
                     message: "User not found",
                 });
             }
-
-            await user.remove();
-
+    
+            // Instead of await user.remove(), you can use:
+            // await User.findByIdAndRemove(userId);
+            await User.findByIdAndRemove(userId);
+    
             return res.status(200).json({
                 statusCode: 200,
                 message: "User deleted successfully",
@@ -164,9 +182,14 @@ const userController = {
             });
         }
     },
+    
     login: async (req, res) => {
         const {email, password} = req.body;
         const user = await User.findOne({email});
+
+
+   
+        
 
         if(!user){
             return res.status(404).json({
@@ -186,10 +209,23 @@ const userController = {
 
         return res.status(200).json({
             statusCode: 200,
-            message: "User logged in",
-            token: token,
+            message: token.toString(),
+            role: user.role,
+                __id : user.id,
+                firstname : user.firstname,
+                lastname : user.lastname,
+                email : user.email,
+                image : user.image,
+                dateOfBirth : user.dateOfBirth,
+                password : user.password,
+                createdAt : user.createdAt,
+                updatedAt : user.updatedAt,
+                __v : user.__v.toString()
         });
     }
 };
 
+
 export default userController;
+
+

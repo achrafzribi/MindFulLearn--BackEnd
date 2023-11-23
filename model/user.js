@@ -9,7 +9,7 @@ const userSchema = new Schema(
         },
         lastname: {
             type: String,
-            required: true,
+            required: true ,
         },
         email: {
             type: String,
@@ -17,7 +17,7 @@ const userSchema = new Schema(
         },
         image: {
             type: String,
-            required: true,
+            required: false,
         },
         role: {
             type: String,
