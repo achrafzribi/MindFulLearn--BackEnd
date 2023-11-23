@@ -1,6 +1,7 @@
-import { User } from "../model/user.js";
+import {User} from "../model/user.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import {sendForgotPasswordEmail, sendTestEmail} from "../utils/emailService.js";
 
 const userController = {
     createUser: async (req, res) => {
@@ -110,17 +111,16 @@ const userController = {
                 statusCode: 200,
                 message: "User fetched successfully",
                 role: user.role,
-                __id : user.id,
-                firstname : user.firstname,
-                lastname : user.lastname,
-                email : user.email,
-                image : user.image,
-                dateOfBirth : user.dateOfBirth,
-                password : user.password,
-                createdAt : user.createdAt,
-                updatedAt : user.updatedAt,
-                __v : user.__v.toString()
-
+                __id: user.id,
+                firstname: user.firstname,
+                lastname: user.lastname,
+                email: user.email,
+                image: user.image,
+                dateOfBirth: user.dateOfBirth,
+                password: user.password,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+                __v: user.__v.toString()
 
 
             });
@@ -155,21 +155,21 @@ const userController = {
         try {
             const userId = req.params.id;
             console.log("User ID to delete:", userId);
-    
+
             const user = await User.findById(userId);
             console.log("User to delete:", user);
-    
+
             if (!user) {
                 return res.status(404).json({
                     statusCode: 404,
                     message: "User not found",
                 });
             }
-    
+
             // Instead of await user.remove(), you can use:
             // await User.findByIdAndRemove(userId);
             await User.findByIdAndRemove(userId);
-    
+
             return res.status(200).json({
                 statusCode: 200,
                 message: "User deleted successfully",
@@ -182,23 +182,19 @@ const userController = {
             });
         }
     },
-    
+
     login: async (req, res) => {
         const {email, password} = req.body;
         const user = await User.findOne({email});
 
-
-   
-        
-
-        if(!user){
+        if (!user) {
             return res.status(404).json({
                 statusCode: 404,
                 message: "User not found",
             });
         }
 
-        if(!(await bcrypt.compare(password, user.password))){
+        if (!(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({
                 statusCode: 401,
                 message: "Wrong password",
@@ -207,21 +203,84 @@ const userController = {
 
         const token = jwt.sign({user}, process.env.JWT_SECRET, {expiresIn: "1d"});
 
+        sendTestEmail();
+
         return res.status(200).json({
             statusCode: 200,
             message: token.toString(),
             role: user.role,
-                __id : user.id,
-                firstname : user.firstname,
-                lastname : user.lastname,
-                email : user.email,
-                image : user.image,
-                dateOfBirth : user.dateOfBirth,
-                password : user.password,
-                createdAt : user.createdAt,
-                updatedAt : user.updatedAt,
-                __v : user.__v.toString()
+            __id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            image: user.image,
+            dateOfBirth: user.dateOfBirth,
+            password: user.password,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            __v: user.__v.toString()
         });
+    },
+    forgotPassword_SendCode: async (req, res) => {
+        const {email} = req.body;
+
+        try {
+            const user = await User.findOne({email});
+            if (!user)
+                return res.status(404).json({
+                    statusCode: 404,
+                    message: "User not found",
+                });
+            const randCode = sendForgotPasswordEmail(email)
+            await User.updateOne({email}, {code: randCode});
+
+            return res.status(200).json({
+                statusCode: 200,
+                message: "Email sent",
+            });
+
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                statusCode: 500,
+                message: "Internal server error",
+            });
+        }
+    },
+    forgotPassword_GetCode : async (req, res) =>{
+        const {email, password, code} = req.body;
+
+        try {
+            const user = await User.findOne({email});
+
+            if (!user) {
+                return res.status(404).json({
+                    statusCode: 404,
+                    message: "User not found",
+                });
+            }
+
+            if (user.code !== code) {
+                return res.status(401).json({
+                    statusCode: 401,
+                    message: "Wrong code",
+                });
+            }
+
+            await User.updateOne({email}, {password: await bcrypt.hash(password, 10), $unset: {code: 1}});
+
+            return res.status(200).json({
+                statusCode: 200,
+                message: "Password resetted successfully",
+            });
+
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                statusCode: 500,
+                message: "Internal server error",
+            });
+        }
     }
 };
 

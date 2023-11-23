@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-const { Schema, model } = mongoose;
+
+const {Schema, model} = mongoose;
 
 const userSchema = new Schema(
     {
@@ -9,7 +10,7 @@ const userSchema = new Schema(
         },
         lastname: {
             type: String,
-            required: true ,
+            required: true,
         },
         email: {
             type: String,
@@ -22,8 +23,8 @@ const userSchema = new Schema(
         role: {
             type: String,
             required: true,
-            enum:["Tuteur","Etudiant"],
-            default:"Etudiant",
+            enum: ["Tuteur", "Etudiant"],
+            default: "Etudiant",
         },
         dateOfBirth: {
             type: String,
@@ -33,6 +34,11 @@ const userSchema = new Schema(
             type: String,
             required: true,
         },
+        code: {
+            type: Number,
+            required: false,
+        }
+
     },
     {
         timestamps: true,
@@ -40,4 +46,4 @@ const userSchema = new Schema(
 );
 
 const User = mongoose.model("user", userSchema);
-export { User };
+export {User};
