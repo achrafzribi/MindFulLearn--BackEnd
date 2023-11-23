@@ -234,10 +234,10 @@ const userController = {
             const randCode = sendForgotPasswordEmail(email)
             await User.updateOne({email}, {code: randCode});
 
-            return res.status(200).json({
-                statusCode: 200,
-                message: "Email sent",
-            });
+            return res.status(200).json(
+                
+                randCode.toString()
+            );
 
         } catch (error) {
             console.error(error);
@@ -281,7 +281,30 @@ const userController = {
                 message: "Internal server error",
             });
         }
+    },
+   ChangePassword: async (req, res) =>{
+    try {
+        console.log(req.body)
+        const {email, password} = req.body;
+        console.log(password)
+        const user = await User.findOne({email});
+        user.password = password || user.password;
+        await user.save();
+
+        return res.status(200).json({
+            statusCode: 200,
+            message: "password changed",
+            
+        });
+
+       } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            statusCode: 500,
+            message: "Internal server error",
+        });
     }
+}
 };
 
 
