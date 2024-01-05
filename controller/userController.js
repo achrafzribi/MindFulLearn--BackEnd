@@ -28,8 +28,7 @@ const userController = {
             await user.save();
 
             return res.status(201).json({
-                statusCode: 201,
-                message: "User created",
+              
                 user: user,
             });
         } catch (error) {
@@ -52,6 +51,8 @@ const userController = {
                 role,
                 dateOfBirth,
                 password,
+                latitude,
+                longitude,
             } = req.body;
 
             if (!userId) {
@@ -69,7 +70,19 @@ const userController = {
                     message: "User not found",
                 });
             }
-
+             if(user.role == "Tuteur"){
+                user.firstname = firstname || user.firstname;
+                user.lastname = lastname || user.lastname;
+                user.email = email || user.email;
+                user.image = image || user.image;
+                user.role = role || user.role;
+                user.dateOfBirth = dateOfBirth || user.dateOfBirth;
+                user.password = password || user.password;
+                user.latitude = latitude || user.latitude;
+                user.longitude = longitude || user.longitude;
+                await user.save();
+             }
+             else{
             user.firstname = firstname || user.firstname;
             user.lastname = lastname || user.lastname;
             user.email = email || user.email;
@@ -79,7 +92,7 @@ const userController = {
             user.password = password || user.password;
 
             await user.save();
-
+             }
             return res.status(200).json({
                 statusCode: 200,
                 message: "User updated",
@@ -93,10 +106,13 @@ const userController = {
             });
         }
     },
-    fetchUser: async (req, res) => {
+    fetchUserAdmin: async (req, res) => {
         try {
-            const userId = req.params.id;
-            const user = await User.findById(userId);
+            console.log(req.body.email)
+            const email = req.body.email;
+
+            const user = await User.findOne({email});
+            console.log(user)
 
             if (!user) {
                 return res.status(404).json({
@@ -109,7 +125,7 @@ const userController = {
                 statusCode: 200,
                 message: "User fetched successfully",
                 role: user.role,
-                __id : user.id,
+                _id : user.id,
                 firstname : user.firstname,
                 lastname : user.lastname,
                 email : user.email,
@@ -132,15 +148,99 @@ const userController = {
         }
     },
 
+    fetchUser: async (req, res) => {
+        try {
+            const userId = req.params.id;
+            const user = await User.findById(userId);
+
+            if (!user) {
+                return res.status(404).json({
+                    statusCode: 404,
+                    message: "User not found",
+                });
+            }
+
+            return res.status(200).json(user);
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                statusCode: 500,
+                message: "Internal server error",
+            });
+        }
+    },
+     toggleBannedStatus : async (req, res) => {
+        try {
+            const userId = req.params.id;
+            const user = await User.findById(userId);
+    
+            if (!user) {
+                return res.status(404).json({
+                    statusCode: 404,
+                    message: "User not found",
+                });
+            }
+    
+            // Toggle the 'isBanned' field
+            user.isBanned = !user.isBanned;
+    
+            // Save the updated user
+            await user.save();
+    
+            return res.status(200).json({
+                statusCode: 200,
+                message: `Banned status toggled for user with ID ${userId}`,
+                isBanned: user.isBanned,
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                statusCode: 500,
+                message: "Internal server error",
+            });
+        }
+    },
+    toggleUserRole: async (req, res) => {
+        try {
+            const userId = req.params.id;
+            const user = await User.findById(userId);
+    
+            if (!user) {
+                return res.status(404).json({
+                    statusCode: 404,
+                    message: "User not found",
+                });
+            }
+    
+            // Store the previous role before toggling
+            const previousRole = user.role;
+    
+            // Toggle the user's role between "admin" and the previous role
+            user.role = user.role === "Admin" ? previousRole : "Admin";
+    
+            // Save the updated user
+            await user.save();
+    
+            return res.status(200).json({
+                statusCode: 200,
+                message: `User role toggled for user with ID ${userId}`,
+                role: user.role,
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                statusCode: 500,
+                message: "Internal server error",
+            });
+        }
+    },
+    
+
     fetchAllUsers: async (req, res) => {
         try {
             const users = await User.find();
 
-            return res.status(200).json({
-                statusCode: 200,
-                message: "All users fetched successfully",
-                users: users,
-            });
+            return res.status(200).json(users);
         } catch (error) {
             console.error(error);
             return res.status(500).json({
@@ -185,6 +285,8 @@ const userController = {
     login: async (req, res) => {
         const {email, password} = req.body;
         const user = await User.findOne({email});
+        const isBanned = user.isBanned;
+
 
         if (!user) {
             return res.status(404).json({
@@ -192,17 +294,26 @@ const userController = {
                 message: "User not found",
             });
         }
-
-        if (!(await bcrypt.compare(password, user.password))) {
+        if (isBanned==true) {
+            return res.status(401).json({
+                statusCode: 401,
+                message: "This user is  Banned",
+            });
+            
+        } else if((!(await bcrypt.compare(password, user.password))) ){
+            
             return res.status(401).json({
                 statusCode: 401,
                 message: "Wrong password",
             });
+
         }
+
+      
 
         const token = jwt.sign({user}, process.env.JWT_SECRET, {expiresIn: "1d"});
 
-        sendTestEmail();
+       // sendTestEmail();
 
         return res.status(200).json({
             statusCode: 200,
@@ -217,6 +328,7 @@ const userController = {
             password: user.password,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            
             __v: user.__v.toString()
         });
     },
@@ -300,7 +412,7 @@ const userController = {
              const {email, password} = req.body;
              console.log(password)
              const user = await User.findOne({email});
-             user.password = password || user.password;
+             user.password = await bcrypt.hash(password, 10);
              await user.save();
      
              return res.status(200).json({

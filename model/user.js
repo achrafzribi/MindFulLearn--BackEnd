@@ -17,13 +17,14 @@ const userSchema = new Schema(
         },
         image: {
             type: String,
-            required : false,
+            required: false,
+            default:"",
         },
         role: {
             type: String,
+            enum: ['Admin', 'Tuteur', 'Etudiant'],
+            default: 'Etudiant', // Set default role as 'etudiant'
             required: true,
-            enum:["Tuteur","Etudiant"],
-            default:"Etudiant",
         },
         dateOfBirth: {
             type: String,
@@ -34,21 +35,25 @@ const userSchema = new Schema(
             required: true,
         },
         experienceMonths: {
-        type: Number,
-     
+            type: Number,
         },
         certificates: {
-        type: String,
-       
+            type: String,
         },
         latitude: {
-        type: Number,
-        
-         },
+            type: Number,
+            default: 0.0
+            
+        },
         longitude: {
-        type: Number,
-        
-         },
+            type: Number,
+            default: 0.0,
+        },
+        isBanned: {
+            type: Boolean,
+            required: true,
+            default: false,
+        },
     },
     {
         timestamps: true,

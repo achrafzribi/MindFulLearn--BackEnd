@@ -18,14 +18,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const corsOptions = {
-  origin: 'http:/172.18.6.106:3000',
+  origin: 'http:/192.168.1.4:3000',
 };
 
 dotenv.config();
 
 const hostname = process.env.SERVERURL;
 const port = process.env.SERVERPORT;
-const connectedUsers = new Map();
+var connectedUsers = new Map();
 app.use(morgan("dev"));
 app.use(cors(corsOptions));
 connectDb();
@@ -49,13 +49,54 @@ app.use("/public/images", express.static(path.join(__dirname, "public/images")))
 
 io.on('connection', (socket) => {
   console.log('A user connected');
+  console.log(connectedUsers)
   socket.on('userConnected', (userId) => {
     // When a user connects, store their socket ID in the connectedUsers Map
     console.log(userId);
     connectedUsers.set(userId, socket.id);
+   
 });
   socket.on('sendMessage', (messageData) => {
-    addOnceMessage(messageData)
+    try {
+      const parsedData = JSON.parse(messageData);
+      // Assuming `addOnceMessage` function requires `req` and `res` parameters
+      const fakeReq = { body: parsedData }; // Creating a fake req object
+      var fakeRes = {
+        json: (data) => {
+          console.log(data); // Output the result or handle as needed
+        },
+        status: () => ({ json: (error) => console.error(error) }),
+      }; // Creating a fake res object
+ 
+      fakeRes=addOnceMessage(fakeReq, fakeRes) .then((newMessage) => {
+        console.log(newMessage);
+     
+      const { sender, recipient, content } = parsedData;
+      const receiverSocketId = connectedUsers.get(parsedData.recipient);
+  if (receiverSocketId) {
+    console.log('ReceiverSocket')
+      io.to(receiverSocketId).emit('receiveMessage', messageData);
+      socket.emit('receiveMessage', messageData);
+      console.log("innnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn")
+     // socket.emit('receiveMessage', messageData);
+  } else {
+   // console.log(parsedData.recipient)
+    console.log("noooooooooooooooooooo")
+    socket.emit('receiveMessage', messageData);
+  }
+})
+.catch((error) => {
+  console.error(error);
+  // Handle errors that occurred during message addition
+  // You might want to emit an error event or handle it as needed
+});
+
+// Invoking addOnceMessage function
+    } catch (error) {
+      console.error('Error parsing JSON data:', error);
+      console.log('Received messageData:', messageData);
+    }
+   // addOnceMessage(messageData[0])
           /*  .then((newMessage) => {
                 // Emit an event back to the client or do something else with the new message
                 socket.emit('receiveMessage', messageData);
@@ -65,24 +106,18 @@ io.on('connection', (socket) => {
                 console.error(error);
                 // Emit an error event or handle it as needed
             });*/
-            const { sender, recipient, content } = messageData;
-            const receiverSocketId = connectedUsers.get(sender);
-        if (receiverSocketId) {
-          console.log('ReceiverSocket')
-            io.to(receiverSocketId).emit('receiveMessage', messageData);
-            socket.emit('receiveMessage', messageData);
-        } else {
-          
-          socket.emit('receiveMessage', messageData);
-        }
-  
-  
+         
   });
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
+    connectedUsers.forEach((value, key) => {
+      if (value === socket.id) {
+        connectedUsers.delete(key);
+      }
+    });
   });
 });
-httpServer.listen(port, hostname, () => {
-  console.log(`Server running on ${hostname}:${port}`);
+httpServer.listen(port, () => {
+  console.log(`Server running on :${port}`);
 });

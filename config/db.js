@@ -9,9 +9,17 @@ mongoose.Promise = global.Promise;
 
 const connectDb = () => {
   mongoose
-    .connect(`mongodb://${databaseURL}/${databaseName}`)
+    .connect(process.env.DBURL,{
+
+    serverApi: {
+      version:'1',
+      strict: true,
+      deprecationErrors: true,
+    }
+    })
     .then(() => {
       console.log("Connected to database");
+      
     })
     .catch((err) => {
       console.log(err);
